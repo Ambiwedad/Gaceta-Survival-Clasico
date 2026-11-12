@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gaceta Survival MineLatino</title>
+<meta name="description" content="Noticias comunitarias, no oficiales, sobre lo que pasa en el Survival Clásico de MineLatino. Envía tu noticia y el equipo moderador la revisa antes de publicarla.">
+<meta property="og:title" content="Gaceta Survival MineLatino">
+<meta property="og:description" content="Noticias comunitarias del Survival Clásico de MineLatino.">
+<meta name="theme-color" content="#0f766e">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f766e'/%3E%3Ctext x='16' y='23' font-family='Arial' font-weight='700' font-size='19' text-anchor='middle' fill='white'%3EG%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#portada">
+      <span class="mark" aria-hidden="true">G</span>
+      <div><b>Gaceta Survival</b><span>Noticias comunitarias · MineLatino Survival Clásico</span></div>
+    </a>
+    <nav class="tabsnav" aria-label="Secciones">
+      <a href="#portada" data-nav="portada">Portada</a>
+      <a href="#enviar" data-nav="enviar">Enviar noticia</a>
+      <a href="#mis-envios" data-nav="mis-envios">Mis envíos</a>
+      <a href="#normas" data-nav="normas">Normas y contacto</a>
+      <a href="#moderacion" data-nav="moderacion" id="navMod" hidden>Moderación<span class="count" id="modCount" hidden></span></a>
+    </nav>
+    <div class="auth" id="authBox"></div>
+  </div>
+</header>
+<div class="config-bar" id="configBar" hidden><div class="wrap"><strong>Falta conectar la base de datos.</strong> Edita <code>config.js</code> con la URL y la clave pública de tu proyecto de Supabase (ver README.md).</div></div>
+<div class="notice-bar"><div class="wrap"><strong>Espacio comunitario, no oficial.</strong> Esta gaceta la hacen jugadores de MineLatino. No es una página del servidor ni habla en nombre de su equipo.</div></div>
+
+<main class="wrap">
+
+<!-- PORTADA -->
+<section class="view" id="v-portada" aria-labelledby="h-portada">
+  <div class="stack">
+    <h2 id="h-portada">Lo último del Survival Clásico</h2>
+    <p class="muted">Eventos, construcciones, comercio y momentos enviados por la comunidad. Cada publicación pasó por revisión antes de aparecer aquí.</p>
+  </div>
+  <div class="filters" role="search">
+    <label class="kw">Buscar<input type="search" id="fq" placeholder="Palabras clave: granja, subasta, castillo…"></label>
+    <label>Desde<input type="date" id="ffrom"></label>
+    <label>Hasta<input type="date" id="fto"></label>
+    <button class="btn ghost" id="fclear" type="button">Limpiar</button>
+  </div>
+  <div class="catbar" id="catbar" aria-label="Filtrar por categoría"></div>
+  <div id="newsStatus" class="small muted" aria-live="polite"></div>
+  <div id="newsList" class="stack"></div>
+</section>
+
+<!-- ARTÍCULO -->
+<section class="view" id="v-noticia" hidden>
+  <div><a class="btn ghost sm" href="#portada">← Volver a la portada</a></div>
+  <div id="articleBox"></div>
+</section>
+
+<!-- ENVIAR -->
+<section class="view" id="v-enviar" hidden aria-labelledby="h-enviar">
+  <div class="stack">
+    <h2 id="h-enviar">Enviar una noticia</h2>
+    <p class="muted">Cuéntanos qué pasó en Survival Clásico. Tu envío queda pendiente hasta que el equipo moderador lo revise. Nada se publica automáticamente.</p>
+  </div>
+  <div id="sendGate"></div>
+  <form class="formcard" id="sendForm" novalidate>
+    <div class="callout warn">
+      <strong>Antes de enviar</strong>
+      Las evidencias deben ser auténticas y de Survival Clásico. No incluyas datos personales, conversaciones privadas, acusaciones sin pruebas, insultos ni contenido que exponga o acose a otros jugadores. Si mencionas a otras personas, moderación revisará que sea respetuoso y necesario.
+    </div>
+    <div class="field">
+      <label for="s-title">Título sugerido</label>
+      <input type="text" id="s-title" maxlength="120" required placeholder="Ej.: Inauguran un mercado en las afueras del spawn">
+    </div>
+    <div class="two">
+      <div class="field">
+        <label for="s-cat">Categoría</label>
+        <select id="s-cat" required></select>
+      </div>
+      <div class="field">
+        <label for="s-date">Fecha aproximada</label>
+        <input type="date" id="s-date" required>
+      </div>
+    </div>
+    <div class="field">
+      <label for="s-desc">¿Qué ocurrió?</label>
+      <textarea id="s-desc" maxlength="5000" required placeholder="Describe los hechos: qué pasó, dónde (coordenadas aproximadas si aplica) y quién participó si es necesario. Separa lo que viste tú de lo que te contaron."></textarea>
+      <span class="hint">Indica qué viste directamente y qué te contaron otros. Moderación lo usará para marcar la noticia como confirmada o como testimonio.</span>
+    </div>
+    <div class="field">
+      <label for="s-ign">Tu nombre dentro del juego</label>
+      <input type="text" id="s-ign" maxlength="32" required placeholder="Tu nick en MineLatino">
+    </div>
+    <div class="field">
+      <span class="lbl">Evidencias</span>
+      <span class="hint">Capturas (hasta 6, máx. 10 MB cada una), videos o enlaces. Las capturas solo las ve moderación hasta que se publiquen.</span>
+      <div class="stack">
+        <label class="btn sm" style="align-self:flex-start" for="s-files">Subir capturas</label>
+        <input type="file" id="s-files" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
+        <div class="thumbs" id="s-thumbs"></div>
+      </div>
+      <div class="linkrow"><input type="url" id="s-link" placeholder="https://… (video, imagen o publicación)"><button class="btn sm" type="button" id="s-addlink">Añadir</button></div>
+      <ul id="s-links" class="small"></ul>
+    </div>
+    <label class="check"><input type="checkbox" id="s-mentions"><span>Mi envío menciona a otros jugadores.</span></label>
+    <div class="callout">
+      <label class="check"><input type="checkbox" id="s-anon"><span><strong>Publicar sin mi nombre</strong>Si lo marcas, la noticia aparecerá como “Remitente anónimo”. Tu nick y tu contacto solo los verá el equipo moderador.</span></label>
+      <div class="field" style="margin-top:10px">
+        <label for="s-contact">Contacto privado para moderación</label>
+        <input type="text" id="s-contact" maxlength="120" placeholder="Ej.: usuario de Discord o cómo encontrarte en el juego">
+        <span class="hint">Solo lo ve moderación, por si necesita verificar algo. Obligatorio si publicas sin nombre.</span>
+      </div>
+    </div>
+    <label class="check"><input type="checkbox" id="s-accept" required><span>Confirmo que lo enviado es auténtico, ocurrió en Survival Clásico y respeta las normas de la comunidad.</span></label>
+    <div id="s-error" class="callout warn" hidden></div>
+    <div class="row"><button class="btn primary" type="submit" id="s-submit">Enviar a revisión</button><span class="small muted">Podrás seguir el estado en “Mis envíos”.</span></div>
+  </form>
+</section>
+
+<!-- MIS ENVÍOS -->
+<section class="view" id="v-mis-envios" hidden aria-labelledby="h-mis">
+  <div class="stack">
+    <h2 id="h-mis">Mis envíos</h2>
+    <p class="muted">Aquí ves el estado de tus noticias y solicitudes. Si moderación te pide más información, puedes responder desde aquí.</p>
+  </div>
+  <div id="mineList" class="stack"></div>
+</section>
+
+<!-- NORMAS -->
+<section class="view" id="v-normas" hidden aria-labelledby="h-normas">
+  <div class="stack">
+    <h2 id="h-normas">Normas de la gaceta</h2>
+    <p class="muted">Una gaceta hecha por y para jugadores. Estas normas aplican a envíos y publicaciones.</p>
+  </div>
+  <div class="rules">
+    <div class="rule"><h3>Solo Survival Clásico</h3><p>Publicamos lo que ocurre en la modalidad Survival Clásico de MineLatino. Otras modalidades quedan fuera.</p></div>
+    <div class="rule"><h3>Evidencias auténticas</h3><p>Capturas y videos sin editar el contenido. Las evidencias falsas o de otro servidor se rechazan.</p></div>
+    <div class="rule"><h3>Hechos, no rumores</h3><p>Cada noticia indica si está <b>confirmada</b> con evidencias o si es un <b>testimonio</b> del remitente. Los rumores no se publican.</p></div>
+    <div class="rule"><h3>Respeto a las personas</h3><p>Sin datos personales, conversaciones privadas, insultos ni acusaciones sin pruebas. Las menciones a otros jugadores deben ser respetuosas y necesarias.</p></div>
+    <div class="rule"><h3>Anonimato con responsabilidad</h3><p>Puedes publicar sin tu nombre. Moderación conserva un contacto privado para verificar la información si hace falta.</p></div>
+    <div class="rule"><h3>Correcciones y retiros</h3><p>Si una noticia tiene un error o te afecta, pide una corrección o su retiro. Moderación responde por “Mis envíos”.</p></div>
+  </div>
+  <div class="stack" id="contacto">
+    <h2>Contacto: correcciones y retiros</h2>
+    <p class="muted">Tu solicitud llega en privado al equipo moderador.</p>
+  </div>
+  <div id="contactAlt"></div>
+  <div id="reqGate"></div>
+  <form class="formcard" id="reqForm" novalidate>
+    <div class="two">
+      <div class="field">
+        <label for="r-type">Tipo de solicitud</label>
+        <select id="r-type">
+          <option value="correccion">Corrección de un dato</option>
+          <option value="retiro">Retiro de una publicación</option>
+          <option value="otro">Otra consulta</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="r-news">Publicación</label>
+        <select id="r-news"></select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="r-desc">Explica tu solicitud</label>
+      <textarea id="r-desc" maxlength="3000" placeholder="Qué dato es incorrecto, cuál sería el correcto, o por qué pides el retiro."></textarea>
+    </div>
+    <div class="two">
+      <div class="field">
+        <label for="r-ign">Tu nombre dentro del juego</label>
+        <input type="text" id="r-ign" maxlength="32">
+      </div>
+      <div class="field">
+        <label for="r-contact">Contacto privado (opcional)</label>
+        <input type="text" id="r-contact" maxlength="120" placeholder="Discord u otro medio">
+      </div>
+    </div>
+    <div id="r-error" class="callout warn" hidden></div>
+    <div class="row"><button class="btn primary" type="submit">Enviar solicitud</button></div>
+  </form>
+</section>
+
+<!-- MODERACIÓN -->
+<section class="view" id="v-moderacion" hidden aria-labelledby="h-mod">
+  <div class="stack">
+    <h2 id="h-mod">Panel de moderación</h2>
+    <p class="muted">Revisa cada envío antes de publicarlo. Comprueba evidencias, quita datos personales y confirma que las menciones a otros jugadores sean respetuosas y necesarias.</p>
+  </div>
+  <div id="modGate"></div>
+  <div id="modBody" hidden>
+    <div class="tabs" role="tablist" id="modTabs"></div>
+    <div class="modgrid">
+      <div class="queue" id="modQueue"></div>
+      <div id="modDetail"></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer><div class="wrap">
+  <span><b>Gaceta Survival</b> es un proyecto comunitario de jugadores de MineLatino. No es una página oficial del servidor y no representa a su equipo.</span>
+  <span>Las publicaciones marcadas como <b>DEMOSTRACIÓN</b> son ejemplos para mostrar el formato. No describen hechos reales.</span>
+  <span>¿Un error o una publicación que te afecta? <a href="#contacto">Pide una corrección o retiro</a>.</span>
+</div></footer>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
