@@ -589,16 +589,29 @@ function editorPanel({sub, news}){
   const origin = src || (news && news.source_submission ? S.subs.find(s=>s.id===news.source_submission) : null);
   const evid = origin ? (origin.images||[]) : [];
   let cover = news ? (news.image_path ? "keep" : null) : (evid[0] || null);
-  if (evid.length || (news && news.image_path)){
+  let upFile = null, upPreview = null;
+  {
     const th=el("div",{class:"thumbs"});
     const draw=()=>{
       th.textContent="";
       th.append(el("button",{type:"button", class:"thumb"+(cover===null?" sel":""), onclick:()=>{cover=null; draw();}}, el("span",{class:"small", style:"display:grid;place-items:center;height:100%"},"Sin imagen")));
       if (news && news.image_path) th.append(el("button",{type:"button", class:"thumb"+(cover==="keep"?" sel":""), onclick:()=>{cover="keep"; draw();}, "aria-label":"Mantener imagen actual"}, el("img",{src:coverUrl(news.image_path), alt:""})));
       evid.forEach(path=>th.append(el("button",{type:"button", class:"thumb"+(cover===path?" sel":""), onclick:()=>{cover=path; draw();}, "aria-label":"Usar como portada"}, evidenceImg(path,""))));
+      if (upFile) th.append(el("button",{type:"button", class:"thumb"+(cover==="upload"?" sel":""), onclick:()=>{cover="upload"; draw();}, "aria-label":"Usar imagen subida"}, el("img",{src:upPreview, alt:""})));
     };
+    const fileIn=el("input",{type:"file", id:"e-cover-file", accept:IMG_TYPES.join(","), hidden:true, onchange:e=>{
+      const f=e.target.files[0]; e.target.value="";
+      if (!f) return;
+      if (!IMG_TYPES.includes(f.type)){ toast("Solo PNG, JPG, WEBP o GIF"); return; }
+      if (f.size > 10*1024*1024){ toast("La imagen supera 10 MB"); return; }
+      if (upPreview) URL.revokeObjectURL(upPreview);
+      upFile=f; upPreview=URL.createObjectURL(f); cover="upload"; draw();
+    }});
     draw();
-    p.append(el("div",{class:"field"}, el("span",{class:"lbl"},"Imagen de portada"), th, el("span",{class:"hint"},"Pulsa una captura para usarla como portada (la elegida tiene borde de color). Se vuelve pública al guardar. Sin imagen se usa una portada abstracta según la categoría.")));
+    p.append(el("div",{class:"field"}, el("span",{class:"lbl"},"Imagen de portada"), th,
+      el("div",{class:"row"}, el("label",{class:"btn sm", for:"e-cover-file"},"Subir otra imagen"), fileIn),
+      evid.length ? null : el("span",{class:"hint"}, origin ? "El envío original no tiene capturas guardadas." : "No se encontró el envío original de esta noticia."),
+      el("span",{class:"hint"},"Pulsa una imagen para usarla como portada (la elegida tiene borde de color). Se vuelve pública al guardar. Sin imagen se usa una portada abstracta según la categoría.")));
   }
   const allLinks=[...new Set([...(base.links||[]), ...(src? src.links||[] : []), ...(base.video_url? [base.video_url]:[])])].map(safeUrl).filter(Boolean);
   const iVideo=el("select",{id:"e-video"}, el("option",{value:""},"Sin video"), allLinks.map(u=>el("option",{value:u},u))); iVideo.value = base.video_url||"";
@@ -632,6 +645,12 @@ function editorPanel({sub, news}){
     try{
       let image_path = news ? news.image_path : null;
       if (cover === null) image_path = null;
+      else if (cover === "upload"){
+        const path = `${newsId}/${uuid()}.${extOf(upFile.type)}`;
+        const up = await sb.storage.from("portadas").upload(path, upFile, {contentType:upFile.type, upsert:false});
+        if (up.error) throw up.error;
+        image_path = path;
+      }
       else if (cover !== "keep") image_path = await copyEvidenceToCover(cover, newsId);
       const row = {
         title:iTitle.value.trim(), summary:iSum.value.trim(), body:iBody.value.trim(), category:iCat.value, event_date:iDate.value||null,
