@@ -585,8 +585,10 @@ function editorPanel({sub, news}){
   p.append(f("e-vernote","Nota de verificación (pública)",iVerNote));
 
   // portada: "keep" (actual), null (sin imagen) o ruta de evidencia
-  let cover = news && news.image_path ? "keep" : null;
-  const evid = src ? (src.images||[]) : [];
+  // Al editar una noticia ya publicada, también se ofrecen las capturas del envío original.
+  const origin = src || (news && news.source_submission ? S.subs.find(s=>s.id===news.source_submission) : null);
+  const evid = origin ? (origin.images||[]) : [];
+  let cover = news ? (news.image_path ? "keep" : null) : (evid[0] || null);
   if (evid.length || (news && news.image_path)){
     const th=el("div",{class:"thumbs"});
     const draw=()=>{
@@ -596,7 +598,7 @@ function editorPanel({sub, news}){
       evid.forEach(path=>th.append(el("button",{type:"button", class:"thumb"+(cover===path?" sel":""), onclick:()=>{cover=path; draw();}, "aria-label":"Usar como portada"}, evidenceImg(path,""))));
     };
     draw();
-    p.append(el("div",{class:"field"}, el("span",{class:"lbl"},"Imagen de portada"), th, el("span",{class:"hint"},"La imagen elegida se vuelve pública. Sin imagen se usa una portada abstracta según la categoría.")));
+    p.append(el("div",{class:"field"}, el("span",{class:"lbl"},"Imagen de portada"), th, el("span",{class:"hint"},"Pulsa una captura para usarla como portada (la elegida tiene borde de color). Se vuelve pública al guardar. Sin imagen se usa una portada abstracta según la categoría.")));
   }
   const allLinks=[...new Set([...(base.links||[]), ...(src? src.links||[] : []), ...(base.video_url? [base.video_url]:[])])].map(safeUrl).filter(Boolean);
   const iVideo=el("select",{id:"e-video"}, el("option",{value:""},"Sin video"), allLinks.map(u=>el("option",{value:u},u))); iVideo.value = base.video_url||"";
